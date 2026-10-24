@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($name === '' || $table < 1 || $table > 50) {
             $error = 'Please enter your name and a table number from 1 to 50.';
         } else {
-            $_SESSION = ['role' => 'customer', 'name' => $name, 'table' => $table, 'cart' => [], 'undo' => []];
+            $_SESSION = ['role' => 'customer', 'name' => $name, 'table' => $table, 'cart' => new DynamicArray(), 'undo' => new Stack()];
             redirect('menu.php');
         }
     } elseif (($_POST['who'] ?? '') === 'kitchen') {
