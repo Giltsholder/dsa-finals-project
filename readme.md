@@ -1,11 +1,8 @@
-A restaurant/menu based project for Data Structures and Algorithm. 
+A restaurant/menu based project for Data Structures and Algorithm.
 
-Members: 
+### Members
 
-Abalos, Jamon Ray T.
-
-    Github: https://github.com/horyagatong
-    
-Estrada, Gian Ernest D. 
-
-    Github: https://github.com/Giltsholder
+| Name | GitHub |
+| :--- | :--- |
+| **Abalos, Jamon Ray T.** | [@horyagatong](https://github.com/horyagatong) |
+| **Estrada, Gian Ernest D.** | [@Giltsholder](https://github.com/Giltsholder) |
