@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
+$slug = ($_SESSION['role'] ?? '') === 'customer' ? ($_SESSION['slug'] ?? '') : '';
 $_SESSION = [];
 session_destroy();
-header('Location: index.php');
+redirect($slug !== '' ? 'welcome.php?r=' . urlencode($slug) : 'index.php');
