@@ -1,21 +1,24 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
 require_role('customer');
+$rid = (int)$_SESSION['restaurant_id'];
 
-[, $menu] = load_menu();
+[, $menu] = load_menu($rid);
 $cart = cart_load();
+cart_prune($cart, $menu);
 
+/* ---- Final confirmation: the order joins this restaurant's kitchen queue ---- */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $cart->size() > 0) {
     $pdo = db();
     $pdo->beginTransaction();
-    $pdo->prepare('INSERT INTO orders (table_no, customer_name, note, total) VALUES (?,?,?,?)')
-        ->execute([$_SESSION['table'], $_SESSION['name'], trim($_POST['note'] ?? ''), cart_total($cart, $menu)]);
+    $pdo->prepare('INSERT INTO orders (restaurant_id, table_no, customer_name, note, total) VALUES (?,?,?,?,?)')
+        ->execute([$rid, $_SESSION['table'], $_SESSION['name'], trim($_POST['note'] ?? ''), cart_total($cart, $menu)]);
     $orderId = (int)$pdo->lastInsertId();
 
     $ins = $pdo->prepare('INSERT INTO order_items (order_id, dish_id, dish_name, price, qty) VALUES (?,?,?,?,?)');
     for ($i = 0; $i < $cart->size(); $i++) {
         $line = $cart->get($i);
-        $d = $menu->get($line->id);       
+        $d = $menu->get($line->id);                // price comes from the database, not the browser
         $ins->execute([$orderId, $d['id'], $d['name'], $d['price'], $line->qty]);
     }
     $pdo->commit();
@@ -25,31 +28,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $cart->size() > 0) {
     redirect('confirm.php?sent=' . $orderId);
 }
 
+/* ---- "Order sent" screen ---- */
 $sent = (int)($_GET['sent'] ?? 0);
+$order = null;
+$ahead = 0;
 if ($sent) {
-    $st = db()->prepare('SELECT * FROM orders WHERE id = ? AND table_no = ?');
-    $st->execute([$sent, $_SESSION['table']]);
+    $st = db()->prepare('SELECT * FROM orders WHERE id = ? AND table_no = ? AND restaurant_id = ?');
+    $st->execute([$sent, $_SESSION['table'], $rid]);
     $order = $st->fetch();
-    $ahead = $order ? (int)db()->query("SELECT COUNT(*) FROM orders WHERE status = 'queued' AND id < " . (int)$order['id'])->fetchColumn() : 0;
+    if ($order) {
+        $st = db()->prepare("SELECT COUNT(*) FROM orders WHERE status = 'queued' AND restaurant_id = ? AND id < ?");
+        $st->execute([$rid, $order['id']]);
+        $ahead = (int)$st->fetchColumn();
+    }
 }
+if (!$order && $cart->size() === 0) redirect('menu.php');
 
-if (!$sent && $cart->size() === 0) redirect('menu.php');
+page_start('Confirm order', 'Table ' . (int)$_SESSION['table'] . ' &middot; ' . e($_SESSION['name']), '', $_SESSION['restaurant_name']);
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Confirm order - Hapag Restaurant</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-<header class="top">
-    <h1>Hapag Restaurant</h1>
-    <span>Table <?= (int)$_SESSION['table'] ?> &middot; <?= e($_SESSION['name']) ?></span>
-</header>
 <main class="narrow">
-<?php if ($sent && $order): ?>
+<?php if ($order): ?>
     <div class="box">
         <h2>Your order is with the kitchen</h2>
         <p>Order #<?= (int)$order['id'] ?> for table <?= (int)$order['table_no'] ?>, total <?= peso($order['total']) ?>.</p>
@@ -85,5 +83,4 @@ if (!$sent && $cart->size() === 0) redirect('menu.php');
     </div>
 <?php endif; ?>
 </main>
-</body>
-</html>
+<?php page_end();
