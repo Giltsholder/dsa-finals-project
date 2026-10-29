@@ -1,10 +1,12 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
 require_role('customer');
+$rid = (int)$_SESSION['restaurant_id'];
 
-[$grouped, $menu] = load_menu();      
-$cart = cart_load();                  
-$undo = undo_load();                  
+[$grouped, $menu] = load_menu($rid);     // $menu is the HashMap (only dishes that are available)
+$cart = cart_load();                     // DynamicArray
+cart_prune($cart, $menu);
+$undo = undo_load();                     // Stack
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -13,9 +15,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'undo') {
         if (!$undo->isEmpty()) {
             $last = $undo->pop();
-            cart_set($cart, $last->id, $last->prev);
+            if ($menu->has($last->id)) cart_set($cart, $last->id, $last->prev);
         }
-    } elseif ($menu->has($id)) {      
+    } elseif ($menu->has($id)) {         // HashMap check: ignore ids that aren't on this menu
         $qty = cart_qty($cart, $id);
         $new = match ($action) {
             'add'    => $qty + 1,
@@ -24,28 +26,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             default  => $qty,
         };
         if ($new !== $qty) {
-            if ($undo->size() >= 50) $undo->keepNewest(40);   
+            if ($undo->size() >= 50) $undo->keepNewest(40);   // keep the session small
             $undo->push(new UndoEntry($id, $qty));
             cart_set($cart, $id, max(0, min($new, 20)));
         }
     }
     redirect('menu.php' . (isset($_POST['back']) ? '#' . preg_replace('/[^a-z0-9-]/', '', $_POST['back']) : ''));
 }
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Menu - Hapag Restaurant</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-<header class="top">
-    <h1>Hapag Restaurant</h1>
-    <span>Table <?= (int)$_SESSION['table'] ?> &middot; <?= e($_SESSION['name']) ?> &middot; <a href="logout.php">Leave</a></span>
-</header>
 
+page_start('Menu', 'Table ' . (int)$_SESSION['table'] . ' &middot; ' . e($_SESSION['name']) . ' &middot; <a href="logout.php">Leave</a>',
+           '', $_SESSION['restaurant_name']);
+?>
+<?php if (!$grouped): ?>
+    <main class="narrow"><div class="box"><h2>The menu is being prepared</h2>
+        <p class="muted">Nothing is available to order yet. Please ask your server.</p></div></main>
+<?php else: ?>
 <nav class="cats">
     <?php foreach ($grouped as $g): ?>
         <a href="#cat-<?= (int)$g['category']['id'] ?>"><?= e($g['category']['name']) ?></a>
@@ -107,5 +102,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
     </aside>
 </main>
-</body>
-</html>
+<?php endif; ?>
+<?php page_end();
