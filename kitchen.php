@@ -1,25 +1,28 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
-require_role('kitchen');
+require_role('kitchen', 'owner');
+$rid = (int)$_SESSION['restaurant_id'];
 
-$queue = kitchen_queue();                 // Queue: oldest waiting order at the front
+$queue = kitchen_queue($rid);         
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = (int)($_POST['order_id'] ?? 0);
     if (($_POST['action'] ?? '') === 'start') {
-        // Only the order at the FRONT of the queue may be started (first in, first out)
+
         $front = $queue->peek();
         if ($front && (int)$front['id'] === $id) {
             $next = $queue->dequeue();
-            db()->prepare("UPDATE orders SET status = 'cooking' WHERE id = ?")->execute([$next['id']]);
+            db()->prepare("UPDATE orders SET status = 'cooking' WHERE id = ? AND restaurant_id = ?")->execute([$next['id'], $rid]);
         }
     } elseif (($_POST['action'] ?? '') === 'served') {
-        db()->prepare("UPDATE orders SET status = 'served' WHERE id = ? AND status = 'cooking'")->execute([$id]);
+        db()->prepare("UPDATE orders SET status = 'served' WHERE id = ? AND restaurant_id = ? AND status = 'cooking'")->execute([$id, $rid]);
     }
     redirect('kitchen.php');
 }
 
-$cooking = db()->query("SELECT * FROM orders WHERE status = 'cooking' ORDER BY id")->fetchAll();
+$st = db()->prepare("SELECT * FROM orders WHERE status = 'cooking' AND restaurant_id = ? ORDER BY id");
+$st->execute([$rid]);
+$cooking = $st->fetchAll();
 $waitingCount = $queue->size();
 
 function ticket(array $o, bool $withButton, string $action, string $label, string $class = ''): void { ?>
@@ -40,22 +43,11 @@ function ticket(array $o, bool $withButton, string $action, string $label, strin
         <?php endif; ?>
     </div>
 <?php }
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="refresh" content="10">
-<title>Kitchen - Hapag Restaurant</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-<header class="top">
-    <h1>Kitchen</h1>
-    <span><?= e($_SESSION['name']) ?> &middot; refreshes every 10 seconds &middot; <a href="logout.php">Sign out</a></span>
-</header>
 
+$right = e($_SESSION['name']) . ' &middot; refreshes every 10 seconds &middot; ';
+$right .= $_SESSION['role'] === 'owner' ? owner_nav() : '<a href="logout.php">Sign out</a>';
+page_start('Kitchen', $right, '<meta http-equiv="refresh" content="10">', 'Kitchen - ' . $_SESSION['restaurant_name']);
+?>
 <main class="kitchen">
     <section>
         <h2>Waiting (<?= $waitingCount ?>)</h2>
@@ -72,5 +64,4 @@ function ticket(array $o, bool $withButton, string $action, string $label, strin
         <?php foreach ($cooking as $o) ticket($o, true, 'served', 'Mark as served'); ?>
     </section>
 </main>
-</body>
-</html>
+<?php page_end();
