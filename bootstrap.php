@@ -12,18 +12,50 @@ class UndoEntry { public function __construct(public int $id, public int $prev) 
 session_start();
 
 /* ---------- Database: created automatically on first run, starts with NO menu ---------- */
+function open_db(string $file): PDO {
+    $pdo = new PDO('sqlite:' . $file);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $pdo->exec('PRAGMA foreign_keys = ON');
+    return $pdo;
+}
+
+/* True only for a database built by the old single-restaurant version: it has a
+   users table but no restaurant_id column. */
+function schema_is_outdated(PDO $pdo): bool {
+    $st = $pdo->prepare('SELECT COUNT(*) FROM sqlite_master WHERE type = ? AND name = ?');
+    $st->execute(['table', 'users']);
+    if ((int)$st->fetchColumn() === 0) return false;            // brand new file, nothing to do
+    foreach ($pdo->query('PRAGMA table_info(users)') as $column) {
+        if ($column['name'] === 'restaurant_id') return false;  // already the current layout
+    }
+    return true;
+}
+
 function db(): PDO {
     static $pdo = null;
     if ($pdo) return $pdo;
 
-    $dir = __DIR__ . '/data';
+    $dir  = __DIR__ . '/data';
+    $file = $dir . '/restaurant.sqlite';
     if (!is_dir($dir)) mkdir($dir, 0755, true);
     if (!file_exists($dir . '/.htaccess')) file_put_contents($dir . '/.htaccess', "Require all denied\n");
 
-    $pdo = new PDO('sqlite:' . $dir . '/restaurant.sqlite');
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-    $pdo->exec('PRAGMA foreign_keys = ON');
+    $pdo = open_db($file);
+
+    /* CREATE TABLE IF NOT EXISTS never touches a table that already exists, so an
+       outdated file would keep its old columns and every INSERT that mentions
+       restaurant_id would fail. Move it aside and start a current database. */
+    if (schema_is_outdated($pdo)) {
+        $pdo = null;                                            // close first, or Windows won't rename
+        $backup = $dir . '/restaurant.old-' . date('Ymd-His') . '.sqlite';
+        if (!rename($file, $backup)) {
+            throw new RuntimeException('Could not move the outdated database aside. Delete ' . $file . ' and reload.');
+        }
+        $_SESSION = [];                       // old logins point at restaurants that no longer exist
+        session_regenerate_id(true);
+        $pdo = open_db($file);
+    }
 
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS restaurants (
