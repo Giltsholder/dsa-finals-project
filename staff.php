@@ -1,5 +1,4 @@
 <?php
-/* Owner: create kitchen staff logins and set how many tables the restaurant has. */
 require_once __DIR__ . '/account_functions.php';
 require_role('owner');
 $rid = (int)$_SESSION['restaurant_id'];
