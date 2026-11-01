@@ -34,8 +34,8 @@ page_start('Welcome', '', '', $r['name']);
 <main class="narrow">
     <?php if ($error): ?><p class="alert"><?= e($error) ?></p><?php endif; ?>
     <form method="post" class="box">
-        <h2>Welcome to <?= e($r['name']) ?></h2>
-        <p class="muted">Tell us who and where you're seated, then browse the menu.</p>
+        <h2>Welcome to <?= e($r['name']) ?>!</h2>
+        <p class="muted">Tell us who you are and where you're seated, then browse the menu.</p>
         <label>Your name <input name="name" required></label>
         <label>Table number <input type="number" name="table_no" min="1" max="<?= (int)$r['table_count'] ?>" required></label>
         <button class="btn">View the menu</button>
