@@ -139,18 +139,41 @@ function page_start(string $title, string $right = '', string $extraHead = '', s
 <title><?= e($title) ?></title>
 <link rel="stylesheet" href="style.css">
 <script src="password-toggle.js" defer></script>
+<script src="header-menu.js" defer></script>
 </head>
 <body>
 <header class="top">
     <h1><?= e($heading !== '' ? $heading : $title) ?></h1>
-    <span><?= $right ?></span>
+    <div class="top-right"><?= $right ?></div>
 </header>
 <?php }
 function page_end(): void { echo "</body>\n</html>\n"; }
 
+/* Hamburger menu for the header. Links are label => href. */
+function header_menu(array $links, string $user = '', string $note = ''): string {
+    $html = '<div class="header-account">';
+    if ($note !== '') $html .= '<span class="menu-note">' . e($note) . '</span>';
+    $html .= '<details class="menu">'
+           . '<summary class="menu-button" aria-label="Account menu" title="Account menu">'
+           . '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" '
+           . 'stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false">'
+           . '<path d="M4 7h16M4 12h16M4 17h16"/></svg>'
+           . '</summary>'
+           . '<nav class="menu-panel" aria-label="Account menu">';
+    if ($user !== '') $html .= '<span class="menu-user">' . e($user) . '</span>';
+    foreach ($links as $label => $href) {
+        $html .= '<a href="' . e($href) . '">' . e($label) . '</a>';
+    }
+    return $html . '</nav></details></div>';
+}
+
 function owner_nav(): string {
-    return '<a href="admin.php">Menu</a> &middot; <a href="staff.php">Staff &amp; settings</a> &middot; '
-         . '<a href="kitchen.php">Kitchen screen</a> &middot; <a href="logout.php">Sign out</a>';
+    return header_menu([
+        'Menu'             => 'admin.php',
+        'Staff & Settings' => 'staff.php',
+        'Kitchen Screen'   => 'kitchen.php',
+        'Sign Out'         => 'logout.php',
+    ]);
 }
 
 function load_menu(int $restaurantId, bool $customerView = true): array {
