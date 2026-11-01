@@ -138,6 +138,7 @@ function page_start(string $title, string $right = '', string $extraHead = '', s
 <?= $extraHead ?>
 <title><?= e($title) ?></title>
 <link rel="stylesheet" href="style.css">
+<script src="password-toggle.js" defer></script>
 </head>
 <body>
 <header class="top">
