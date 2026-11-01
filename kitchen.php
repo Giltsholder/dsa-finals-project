@@ -44,8 +44,15 @@ function ticket(array $o, bool $withButton, string $action, string $label, strin
     </div>
 <?php }
 
-$right = e($_SESSION['name']) . ' &middot; refreshes every 10 seconds &middot; ';
-$right .= $_SESSION['role'] === 'owner' ? owner_nav() : '<a href="logout.php">Sign out</a>';
+$links = [
+    'Menu'             => 'admin.php',
+    'Staff & Settings' => 'staff.php',
+    'Sign Out'         => 'logout.php',
+];
+if (($_SESSION['role'] ?? '') !== 'owner') {
+    $links = ['Sign Out' => 'logout.php'];   // Menu and Staff & Settings are owner-only
+}
+$right = header_menu($links, $_SESSION['name'], 'refreshes every 10 seconds');
 page_start('Kitchen', $right, '<meta http-equiv="refresh" content="10">', 'Kitchen - ' . $_SESSION['restaurant_name']);
 ?>
 <main class="kitchen">
