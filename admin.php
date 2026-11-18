@@ -40,6 +40,7 @@ $link  = base_url() . '/welcome.php?r=' . $_SESSION['slug'];
 page_start('My menu', owner_nav(), '', $_SESSION['restaurant_name']);
 ?>
 <main class="narrow stack-gap">
+    <p class="small"><a href="dashboard.php">&larr; Back to dashboard</a></p>
     <?php if ($flash): ?><p class="alert"><?= e($flash) ?></p><?php endif; ?>
 
     <div class="linkbox">

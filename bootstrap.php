@@ -169,6 +169,7 @@ function header_menu(array $links, string $user = '', string $note = ''): string
 
 function owner_nav(): string {
     return header_menu([
+        'Dashboard'        => 'dashboard.php',
         'Menu'             => 'admin.php',
         'Staff & Settings' => 'staff.php',
         'Kitchen Screen'   => 'kitchen.php',

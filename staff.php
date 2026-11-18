@@ -26,6 +26,7 @@ $flash = take_flash();
 page_start('Staff & settings', owner_nav(), '', $_SESSION['restaurant_name']);
 ?>
 <main class="narrow stack-gap">
+    <p class="small"><a href="dashboard.php">&larr; Back to dashboard</a></p>
     <?php if ($flash): ?><p class="alert"><?= e($flash) ?></p><?php endif; ?>
 
     <form method="post" class="box">

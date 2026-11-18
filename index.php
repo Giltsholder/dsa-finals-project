@@ -4,19 +4,19 @@ db();
 
 if (isset($_GET['r'])) redirect('welcome.php?r=' . urlencode($_GET['r']));   // customer links still work here
 if (in_array($_SESSION['role'] ?? '', ['owner', 'kitchen'], true)) {
-    redirect($_SESSION['role'] === 'owner' ? 'admin.php' : 'kitchen.php');
+    redirect($_SESSION['role'] === 'owner' ? 'dashboard.php' : 'kitchen.php');
 }
 
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (($_POST['who'] ?? '') === 'signup') {
         $error = register_owner($_POST['restaurant'] ?? '', $_POST['email'] ?? '', $_POST['password'] ?? '');
-        if ($error === '') redirect('admin.php');
+        if ($error === '') redirect('dashboard.php');
     } else {
         $u = find_user($_POST['username'] ?? '');
         if ($u && password_verify($_POST['password'] ?? '', $u['password_hash'])) {
             start_session_for($u);
-            redirect($u['role'] === 'owner' ? 'admin.php' : 'kitchen.php');
+            redirect($u['role'] === 'owner' ? 'dashboard.php' : 'kitchen.php');
         }
         $error = 'Wrong email/username or password.';
     }
