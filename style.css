@@ -110,13 +110,3 @@ select { display: block; width: 100%; padding: .5rem; margin-top: .25rem; border
 .pass-toggle svg { width: 18px; height: 18px; }
 .pass-field:focus-within .pass-toggle { border-color: #1f4d3a; }
 .pass-toggle:focus-visible { outline: 3px solid #1f4d3a; outline-offset: 2px; }
-
-/* ---- owner dashboard ---- */
-.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-.dash-card { display: flex; flex-direction: column; gap: .5rem; padding: 1.5rem; background: #fff; border: 1px solid #ddd;
-             color: inherit; text-decoration: none; }
-.dash-card:hover { border-color: #1f4d3a; background: #eef5f1; }
-.dash-title { font-size: 1.5rem; color: #1f4d3a; }
-.dash-status { margin-top: .5rem; padding-top: .6rem; border-top: 1px solid #eee; font-size: .9rem; }
-.dash-go { margin-top: auto; color: #1f4d3a; font-weight: bold; }
-@media (max-width: 760px) { .dash-grid { grid-template-columns: 1fr; } }
